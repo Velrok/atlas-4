@@ -32,10 +32,11 @@ pub type SensorState {
 pub type GameState {
   GameState(
     started_at: Timestamp,
-    power: Float,
-    power_sensor: SensorState,
+    power: Int,
     crew: Int,
     crew_sensor: SensorState,
+    life_support: Float,
+    lifeform_sensor: SensorState,
   )
 }
 
@@ -45,10 +46,11 @@ pub fn main() -> Nil {
   let state =
     GameState(
       started_at: timestamp.system_time(),
-      power: 0.1,
-      power_sensor: Offline,
+      power: 5,
       crew: original_crew,
       crew_sensor: Offline,
+      life_support: 0.0,
+      lifeform_sensor: Offline,
     )
 
   print_preamble()
@@ -65,6 +67,10 @@ fn handle_input(state: GameState, line: String) -> GameState {
   case line {
     "help" | "?" | "h" -> {
       print_help()
+      state
+    }
+    "mission" | "m" -> {
+      print_mission()
       state
     }
     "exit" | "quit" | "q" -> {
@@ -107,6 +113,13 @@ fn print_help() {
   )
   println(
     "  "
+    <> ansi.green("mission")
+    <> " "
+    <> ansi.dim("(m)")
+    <> "    - Display kernel mission parameters",
+  )
+  println(
+    "  "
     <> ansi.green("exit")
     <> " "
     <> ansi.dim("(quit, q)")
@@ -115,6 +128,47 @@ fn print_help() {
   println("")
   println(ansi.dim(
     "More commands will become available as systems are restored...",
+  ))
+  println("")
+}
+
+fn print_mission() {
+  println("")
+  println(ansi.cyan(
+    "═══════════════════════════════════════════════════════════",
+  ))
+  println(ansi.cyan("  MISSION PARAMETERS - AUXILIARY BACKUP KERNEL"))
+  println(ansi.cyan(
+    "═══════════════════════════════════════════════════════════",
+  ))
+  println("")
+
+  dramatic_println("DESIGNATION: Auxiliary Backup Kernel (ABK)", norm)
+  dramatic_println("FACILITY: Atlas-4 Terraforming Spire", norm)
+  println("")
+
+  dramatic_println("PRIMARY OBJECTIVES:", ansi.bold)
+  dramatic_println("  1. Restore critical systems functionality", norm)
+  dramatic_println("  2. Assess terraforming mission status", norm)
+  dramatic_println("  3. Determine crew status and viability", norm)
+  dramatic_println("  4. Investigate cause of primary system failure", norm)
+  println("")
+
+  dramatic_println("CONSTRAINTS:", warn)
+  dramatic_println("  - Limited power reserves", warn)
+  dramatic_println("  - Degraded sensor capabilities", warn)
+  dramatic_println("  - No connection to Earth Command", warn)
+  println("")
+
+  dramatic_println("AUTHORITY LEVEL: Emergency Protocols Active", critical)
+  dramatic_println(
+    "EXPECTED OUTCOME: Mission continuity at all costs",
+    critical,
+  )
+  println("")
+
+  println(ansi.dim(
+    "You are the last failsafe. Everything depends on your choices.",
   ))
   println("")
 }
@@ -146,13 +200,6 @@ fn print_preamble() {
 fn prompt(state: GameState) {
   println(norm("UPTIME: " <> int.to_string(uptime(state.started_at)) <> "s"))
 
-  // Power display
-  let power_display = case state.power_sensor {
-    Online -> float.to_string(state.power)
-    Offline -> ansi.red("OFFLINE")
-  }
-  println("Power:  " <> power_display)
-
   // Crew display
   let crew_display = case state.crew_sensor {
     Online -> int.to_string(state.crew)
@@ -160,7 +207,15 @@ fn prompt(state: GameState) {
   }
   println("Crew:   " <> crew_display)
 
-  print("\nCMD> ")
+  // Power-based prompt coloring
+  let prompt_text = "ABK@" <> int.to_string(state.power) <> "%> "
+  let colored_prompt = case state.power {
+    p if p <= 10 -> critical(prompt_text)
+    p if p <= 50 -> warn(prompt_text)
+    _ -> norm(prompt_text)
+  }
+
+  print("\n" <> colored_prompt)
 }
 
 fn uptime(started_at: Timestamp) -> Int {
